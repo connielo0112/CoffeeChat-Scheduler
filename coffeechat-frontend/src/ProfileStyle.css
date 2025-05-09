@@ -1,0 +1,273 @@
+
+.profile-container {
+  max-width: 900px;
+  margin: 40px auto;
+  padding: 32px;
+  background-color: #fff;
+  border-radius: 10px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+  position: relative;
+}
+
+.profile-container h2 {
+  margin-top: 0;
+  margin-bottom: 24px;
+  font-size: 24px;
+  font-weight: 600;
+  color: #333;
+}
+
+.profile-header {
+  display: flex;
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #eee;
+}
+
+.avatar-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-right: 30px;
+  min-width: 120px;
+}
+
+.avatar-preview {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  overflow: hidden;
+  background-color: #f0f0f0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.avatar-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 40px;
+  font-weight: bold;
+  color: #555;
+  background-color: #e0e0e0;
+}
+
+.upload-button {
+  display: inline-block;
+  padding: 6px 12px;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #333;
+}
+
+.upload-button:hover {
+  background-color: #e8e8e8;
+}
+
+
+.profile-info {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.name-bio-container {
+  width: 100%;
+}
+
+.name-bio-container h3 {
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0 0 10px 0;
+  color: #333;
+}
+
+.bio-preview {
+  color: #666;
+  line-height: 1.5;
+  font-size: 14px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+.profile-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-row {
+  display: flex;
+  gap: 20px;
+}
+
+.form-row .form-group {
+  flex: 1;
+}
+
+.form-group label {
+  display: block;
+  color: #666;
+  font-size: 14px;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 16px;
+}
+
+.readonly-value {
+  padding: 8px 0;
+  color: #333;
+  font-size: 16px;
+}
+
+.bio-text {
+  white-space: pre-wrap;
+  line-height: 1.6;
+}
+
+.password-field {
+  display: flex;
+  align-items: center;
+}
+
+.password-field input {
+  flex-grow: 1;
+  margin-right: 10px;
+}
+
+.change-password-button {
+  background: none;
+  border: none;
+  color: #4b63e1;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.time-slot-options {
+  display: flex;
+  gap: 10px;
+}
+
+.time-option {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  border: 1px solid #ddd;
+  border-radius: 20px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.time-option.selected {
+  background-color: #4b63e1;
+  color: white;
+  border-color: #4b63e1;
+}
+
+.time-option input {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+}
+
+.checkbox-label input {
+  margin-right: 10px;
+  width: auto;
+}
+
+.skills-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.skills-container.readonly .skill-tag:not(.selected) {
+  display: none;
+}
+
+.skill-tag {
+  padding: 8px 16px;
+  background-color: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 20px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.skill-tag.selected {
+  background-color: #4b63e1;
+  color: white;
+  border-color: #4b63e1;
+}
+
+.skill-tag:hover {
+  background-color: #e8e8e8;
+}
+
+.skill-tag.selected:hover {
+  background-color: #3a52d0;
+}
+
+.save-button,
+.edit-button {
+  width: 100%;
+  padding: 12px;
+  background-color: #4b63e1;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-top: 20px;
+  transition: background-color 0.2s ease;
+}
+
+.save-button:hover,
+.edit-button:hover {
+  background-color: #354ed1;
+}
+
+.message {
+  text-align: center;
+  margin-top: 15px;
+  font-weight: 500;
+}
