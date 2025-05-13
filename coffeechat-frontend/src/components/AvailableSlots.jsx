@@ -12,6 +12,8 @@ function AvailableSlots() {
   const [selected, setSelected] = useState([]);
   const [activeDate, setActiveDate] = useState(null);
   const [timezone, setTimezone] = useState('');
+  const safeTimezone = timezone || 'UTC';
+
 
   useEffect(() => {
     axios.get('/api/available-slots/', { withCredentials: true }).then(res => {
@@ -29,8 +31,8 @@ function AvailableSlots() {
   }, []);
 
   const groupedByDate = slots.reduce((acc, slot) => {
-    const date = slot.start.toLocaleDateString('en-CA', {
-                        timeZone: timezone});
+    const safeTimezone = timezone || 'UTC';
+    const date = slot.start.toLocaleDateString('en-CA', { timeZone: safeTimezone });
     if (!acc[date]) acc[date] = [];
     acc[date].push(slot);
     return acc;
@@ -101,7 +103,7 @@ function AvailableSlots() {
             {
               // new Date(date).toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' })
               groupedByDate[date][0].start.toLocaleDateString(
-                  'en-CA', {timeZone: timezone, weekday: 'short', month: 'short', day: 'numeric'})
+                  'en-CA', {timeZone: safeTimezone, weekday: 'short', month: 'short', day: 'numeric'})
             }
           </button>
         ))}
@@ -114,7 +116,7 @@ function AvailableSlots() {
             hour: 'numeric',
             minute: '2-digit',
             hour12: true,
-            timeZone: timezone
+            timeZone: safeTimezone
           })} – ${slot.end.toLocaleTimeString('en-US', {
             hour: 'numeric',
             minute: '2-digit',

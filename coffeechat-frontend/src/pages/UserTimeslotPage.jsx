@@ -138,6 +138,7 @@ function UserTimeslotPage() {
             {/* Chatbox Component */}
             {showChatbox && currentUser && (
                 <Chatbox 
+                    key={user_id}
                     userId={user_id}
                     userName={`${profile.first_name} ${profile.last_name}`}
                     currentUser={currentUser}

@@ -14,7 +14,6 @@ from decouple import config
 from pathlib import Path
 import os
 from decouple import config
-from configparser import ConfigParser
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -28,14 +27,11 @@ GOOGLE_CALENDAR_REDIRECT_URIS = config('GOOGLE_CALENDAR_REDIRECT_URIS')
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-BASE_DIR = Path(__file__).resolve().parent.parent
-CONFIG = ConfigParser()
-CONFIG.read(BASE_DIR / "config.ini")
-SECRET_KEY = CONFIG.get("Django", "secret")
+SECRET_KEY = config("SECRET_KEY", default="unsafe-dev-secret-key")
 
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', '18.223.186.84', "team30.cmu-webapps.com"]
 
@@ -99,21 +95,21 @@ CHANNEL_LAYERS = {
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-# DATABASES = {
-#    'default': {
-#        'ENGINE': 'django.db.backends.sqlite3',
-#        'NAME': BASE_DIR / 'db.sqlite3',
-#    }
-# }
-
 DATABASES = {
-'default': {
-    'OPTIONS': {'charset': 'utf8mb4'},
-    'ENGINE': 'django.db.backends.mysql',
-    'NAME': 'django',
-    'USER': '',
-    'PASSWORD': '',
-} }
+   'default': {
+       'ENGINE': 'django.db.backends.sqlite3',
+       'NAME': BASE_DIR / 'db.sqlite3',
+   }
+}
+
+#DATABASES = {
+#'default': {
+#    'OPTIONS': {'charset': 'utf8mb4'},
+#    'ENGINE': 'django.db.backends.mysql',
+#    'NAME': 'django',
+#    'USER': '',
+#    'PASSWORD': '',
+#} }
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
@@ -170,8 +166,9 @@ CORS_ALLOWED_ORIGINS = [
 CORS_ALLOW_CREDENTIALS = True
 CORS_ORIGIN_WHITELIST = [
     'http://localhost:3000',
-    "https://team30.cmu-webapps.com"
+    #"https://team30.cmu-webapps.com"
 ]
+
 CORS_ALLOW_METHODS = [
     'DELETE',
     'GET',

@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Cookies from 'js-cookie';
 
-
 function GoogleCallback({ setUser }) {
   const [message, setMessage] = useState('Processing Google login...');
   const navigate = useNavigate();
@@ -32,7 +31,7 @@ function GoogleCallback({ setUser }) {
       try {
         const csrftoken = Cookies.get('csrftoken');
         
-        const response = await fetch(`${window.location.origin}/api/users/google-auth-callback/`, {
+        const response = await fetch('/api/users/google-auth-callback/', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

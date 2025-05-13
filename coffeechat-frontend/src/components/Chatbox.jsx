@@ -93,8 +93,8 @@ const Chatbox = ({ userId, userName, currentUser, onClose }) => {
         wsUrl = `wss://${window.location.host}/ws/chat/${roomName}/`;
     } else {
         // Since React may be running on port 3000 but Django on 8000
-        // wsUrl = `ws://localhost:8000/ws/chat/${roomName}/`;
-        wsUrl = `ws://${window.location.host}/ws/chat/${roomName}/`;
+        // wsUrl = `ws://${window.location.host}/ws/chat/${roomName}/`;
+        wsUrl = `ws://localhost:8000/ws/chat/${roomName}/`;
     }
 
     console.log("Attempting to connect to WebSocket at:", wsUrl);

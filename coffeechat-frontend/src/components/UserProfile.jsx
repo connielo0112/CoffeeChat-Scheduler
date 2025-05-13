@@ -197,6 +197,7 @@ export default function UserProfile({ user, setUser }) {
         
         const uploadData = await uploadResponse.json();
         profile.avatar = uploadData.avatar_url;
+        setImagePreview(uploadData.avatar_url);
       }
       
       // Update personal profile data

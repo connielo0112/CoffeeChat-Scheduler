@@ -109,7 +109,9 @@ function MeetingScheduler({ sender_timezone, receiver_id, receiver_profile }) {
         slots.forEach(slot => {
             // Important: Use moment to convert the time to the correct timezone first
             // BEFORE formatting the date - this ensures proper date boundaries
-            const dateKey = moment(slot.start_datetime).tz(timezone).format('YYYY-MM-DD');
+            const safeTimezone = timezone || 'UTC';
+            const dateKey = moment(slot.start_datetime).tz(safeTimezone).format('YYYY-MM-DD');
+            // const dateKey = moment(slot.start_datetime).tz(timezone).format('YYYY-MM-DD');
             
             if (!dateGroups[dateKey]) {
                 dateGroups[dateKey] = [];
@@ -271,30 +273,42 @@ function MeetingScheduler({ sender_timezone, receiver_id, receiver_profile }) {
             <div>
                 <h2 className="text-2xl font-bold text-gray-700 mb-6">When should we meet?</h2>
                 <div className="flex justify-start w-full px-10 space-x-2">
-                    {uniqueDates.map((date) => (
+                {uniqueDates.map((date, index) => {
+                try {
+                    if (!date || !moment(date).isValid()) {
+                    console.warn("Invalid date at index", index, ":", date);
+                    return null;
+                    }
+
+                    const parsed = moment(date);
+                    const day = parsed.format('ddd');
+                    const dayLabel = parsed.format('DD MMM');
+
+                    return (
                     <div 
                         key={date}
                         onClick={() => {
-                            handleDateSelect(date); // Just pass the date string directly
-                            setSelectedTimeslot(null); // reset selected timeslot when date changes
+                        handleDateSelect(date);
+                        setSelectedTimeslot(null);
                         }}
                         className={`
-                            cursor-pointer rounded-xl w-1/5 py-4 px-2 text-center transition
-                            ${selectedDate && selectedDate === date  // Direct string comparison
-                                ? 'border-2 border-indigo-400 bg-indigo-50' 
-                                : 'border border-gray-200 hover:bg-gray-100'}
-                            `}
+                        cursor-pointer rounded-xl w-1/5 py-4 px-2 text-center transition
+                        ${selectedDate === date 
+                            ? 'border-2 border-indigo-400 bg-indigo-50' 
+                            : 'border border-gray-200 hover:bg-gray-100'}
+                        `}
                     >
-                        <div className="text-xl font-medium">
-                            {moment(date).format('ddd')}
-                        </div>
-                        <div className="text-xl font-bold">
-                            {moment(date).format('DD MMM')}
-                        </div>
+                        <div className="text-xl font-medium">{day}</div>
+                        <div className="text-xl font-bold">{dayLabel}</div>
                     </div>
-                    ))}
-                </div>
+                    );
+                } catch (err) {
+                    console.error("💥 Error rendering date:", date, err);
+                    return null;
+                }
+                })}
             </div>
+        </div>
 
             {/* Time selector */}
             <div>

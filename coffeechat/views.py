@@ -101,34 +101,23 @@ class UserProfileView(APIView):
             profile = user.profile  
             data = request.data
 
-            # check if timezone or duration is changed
-            prev_timezone = profile.timezone
-            prev_duration = profile.time_slot_duration
-            new_timezone = data.get('timezone', prev_timezone)
-            new_duration = data.get('time_slot_duration', prev_duration)
+            # Update User model fields
+            user.first_name = data.get('first_name', user.first_name)
+            user.last_name = data.get('last_name', user.last_name)
+            user.email = data.get('email', user.email)
+            
+            # Save the user model
+            user.save()
 
-            profile_serializer = UserProfileSerializer(profile, data=data, partial=True)
-            if profile_serializer.is_valid():
-                profile_serializer.save()
-            else:
-                return Response(profile_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            # Update UserProfile model fields
+            profile.bio = data.get('bio', profile.bio)
+            profile.timezone = data.get('timezone', profile.timezone)
+            profile.time_slot_duration = data.get('time_slot_duration', profile.time_slot_duration)
+            profile.block_selected_time = data.get('block_selected_time', profile.block_selected_time)
+            profile.import_google_calendar = data.get('import_google_calendar', profile.import_google_calendar)
+            profile.skills = data.get('skills', profile.skills)
 
-
-            # if timezone or duration is changed: delete user data in availability and regenerate
-            if new_timezone != prev_timezone or new_duration != prev_duration:
-                Availability.objects.filter(user_id=user.id).delete()
-
-                generated = calc_ATS(user.id)
-                for start, end in generated:
-                    Availability.objects.create(
-                        user_id=user,
-                        start_datetime=start,
-                        end_datetime=end,
-                        update_time=now(),
-                        meeting_duration=new_duration,
-                        booked=False,
-                        user_delete=False
-                    )
+            profile.save()
 
             # Prepare response data
             user_data = {
@@ -139,8 +128,7 @@ class UserProfileView(APIView):
 
             return Response({
                 'message': 'Profile updated successfully',
-                'user': profile_serializer.data
-            }, status=status.HTTP_200_OK)
+                'user': user_data}, status=status.HTTP_200_OK)
 
         except Exception as e:
             return Response({'error': f'Failed to update profile: {str(e)}'},status=status.HTTP_400_BAD_REQUEST)
@@ -167,16 +155,9 @@ class AppointmentView(APIView):
             appointment = serializer.save()
 
             # Update the timeslot to booked
-            receiver_availability_object = appointment.timeslot_id
-            receiver_availability_object.booked = True
-            receiver_availability_object.save()
-            
-            # update sender's availability
-            for booker_slot in Availability.objects.filter(user_id=booker_uid, booked=False):
-                if timeslot.start_datetime <= booker_slot.start_datetime <= timeslot.end_datetime:
-                    # update sender's availability
-                    booker_slot.booked = True
-                    booker_slot.save()
+            availability_object = appointment.timeslot_id
+            availability_object.booked = True
+            availability_object.save()
 
             # get user credentials (OAuth2)
             try:
@@ -285,15 +266,21 @@ def save_availability(request):
         return Response({"error": "Unauthorized"}, status=status.HTTP_403_FORBIDDEN)
 
     # slot from front end after manually delete
-    kept_ids = set(s["timeslot_id"] for s in slots if s.get("timeslot_id") is not None)
+    kept_slots = set(
+        (
+            parse_datetime(s["start"]).astimezone(pytz.UTC),
+            parse_datetime(s["end"]).astimezone(pytz.UTC)
+        )
+        for s in slots
+    )
 
     # all available slot
     existing_slots = Availability.objects.filter(user_id=user.id, booked=False)
 
     for slot in existing_slots:
-        # slot_key = (slot.start_datetime, slot.end_datetime)
+        slot_key = (slot.start_datetime, slot.end_datetime)
 
-        if slot.timeslot_id in kept_ids:
+        if slot_key in kept_slots:
             # remain
             if slot.user_delete:
                 slot.user_delete = False
@@ -339,19 +326,16 @@ def get_available_slots(request):
                     continue
 
             formatted.append({
-                "timeslot_id": a.timeslot_id,
                 "start": start_local.isoformat(),
                 "end": end_local.isoformat()
             })
     else:
         # if not in Availability table, using calc_ATS
         generated = calc_ATS(user.id)
-        new_slots = []
 
-
+        # save timeslot to Availability table
         for start, end in generated:
-            # save timeslot to Availability table
-            new_slot = Availability.objects.create(
+            Availability.objects.create(
                 user_id=user,
                 start_datetime=start,
                 end_datetime=end,
@@ -360,13 +344,11 @@ def get_available_slots(request):
                 booked=False,
                 user_delete=False
             )
-            # provide timeslot_id for future validation
-            new_slots.append(new_slot)
 
 
-        for slot in new_slots:
+        for s, e in generated:
             # data to front-end
-            s_local, e_local = timezone_transform(slot.start_datetime, slot.end_datetime, user_timezone)
+            s_local, e_local = timezone_transform(s, e, user_timezone)
 
             # remove 00:00–08:00 based on User's timezone
             if profile.block_selected_time == 1:
@@ -376,7 +358,6 @@ def get_available_slots(request):
                     continue
 
             formatted.append({
-                "timeslot_id": slot.timeslot_id,
                 "start": s_local.isoformat(),
                 "end": e_local.isoformat()
             })
@@ -386,33 +367,23 @@ def get_available_slots(request):
         "slots": formatted
     })
 
+# GOOGLE_CLIENT_SECRET_FILE = 'google-calendar-credentials/credentials.json'
+GOOGLE_CLIENT_SECRET_FILE = os.path.join(settings.BASE_DIR, 'google-calendar-credentials', 'credentials_gcl.json')
+SCOPES = [
+    "openid",
+    "email",
+    "profile",
+    "https://www.googleapis.com/auth/calendar"
+]
 
 def google_auth_start(request):
-    redirect_uri = settings.GOOGLE_CALENDAR_REDIRECT_URIS
+    print("GOOGLE_CALENDAR_CLIENT_ID =", settings.GOOGLE_CALENDAR_CLIENT_ID)
+    print("GOOGLE_CALENDAR_CLIENT_SECRET =", settings.GOOGLE_CALENDAR_CLIENT_SECRET)
+    print("GOOGLE_CALENDAR_REDIRECT_URIS =", settings.GOOGLE_CALENDAR_REDIRECT_URIS)
+
+    os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
     redirect_uri = settings.GOOGLE_CALENDAR_REDIRECT_URIS
-    flow = Flow.from_client_config(
-        {
-            "web":
-             {"client_id": settings.GOOGLE_CALENDAR_CLIENT_ID,
-              "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-              "token_uri": "https://oauth2.googleapis.com/token",
-              "client_secret": settings.GOOGLE_CALENDAR_CLIENT_SECRET,
-              # "redirect_uris": [redirect_uri]
-              }
-        },
-        scopes=['https://www.googleapis.com/auth/calendar'],
-        redirect_uri=redirect_uri
-    )
-
-    auth_url, _ = flow.authorization_url(prompt='consent', access_type='offline',include_granted_scopes='true')
-
-    return JsonResponse({'auth_url': auth_url})
-
-
-def google_auth_callback(request):
-    redirect_uri = settings.GOOGLE_CALENDAR_REDIRECT_URIS
-
 
     flow = Flow.from_client_config(
         {
@@ -423,10 +394,25 @@ def google_auth_callback(request):
                 "token_uri": "https://oauth2.googleapis.com/token",
             }
         },
-        scopes=['https://www.googleapis.com/auth/calendar'],
-        redirect_uri=redirect_uri,
+        scopes=[
+        "openid",
+        "email",
+        "profile",
+        "https://www.googleapis.com/auth/calendar"
+        ],
+        redirect_uri=redirect_uri
     )
+    auth_url, _ = flow.authorization_url(prompt='consent', access_type='offline')
+    return JsonResponse({'auth_url': auth_url})
 
+def google_auth_callback(request):
+    redirect_uri = settings.GOOGLE_CALENDAR_REDIRECT_URIS
+
+    flow = Flow.from_client_secrets_file(
+        GOOGLE_CLIENT_SECRET_FILE,
+        scopes=SCOPES,
+        redirect_uri=redirect_uri
+    )
     flow.fetch_token(authorization_response=request.build_absolute_uri())
 
     creds = flow.credentials
@@ -445,13 +431,13 @@ def google_auth_callback(request):
     )
 
     fetch_google_calendar(request)
-    return redirect('https://team30.cmu-webapps.com/')
+
+    return redirect('http://localhost:3000')
 
 @login_required
 def fetch_google_calendar(request):
     try:
         token = UserGoogleToken.objects.get(user=request.user)
-        user = request.user
     except UserGoogleToken.DoesNotExist:
         return JsonResponse({'error': 'No Google token found'}, status=401)
 
@@ -464,7 +450,7 @@ def fetch_google_calendar(request):
         scopes=token.scopes.split(',')
     )
 
-    # if token expire，use refresh token to update and save new access_token
+    # 如果 token 過期，自動用 refresh token 更新，並儲存新的 access_token
     if creds.expired:
         creds.refresh(Request())
         token.access_token = creds.token
@@ -472,13 +458,10 @@ def fetch_google_calendar(request):
         token.expiry = timezone.make_aware(creds.expiry)
         token.save()
 
-    # Delete existing GoogleCalendarTime records for the user
-    GoogleCalendarTime.objects.filter(user_id=user.id).delete()
-
     # set interval for data retrieval: 7 days
-    _now = timezone.now()
-    time_min = format_gcal_time(_now)
-    time_max = format_gcal_time(_now + timedelta(days=7))
+    now = timezone.now()
+    time_min = format_gcal_time(now)
+    time_max = format_gcal_time(now + timedelta(days=7))
 
     # call api
     response = requests.get(
@@ -499,6 +482,7 @@ def fetch_google_calendar(request):
     # store data provided by api into GoogleCalendarTime
     data = response.json()
     created = 0
+    # fetch_id = "..."  # gpt 建議 UUID
 
     for event in data.get('items', []):
         start = event['start'].get('dateTime')
@@ -514,28 +498,7 @@ def fetch_google_calendar(request):
         )
         created += 1
 
-    # Delete existing Availability and regenerate
-    Availability.objects.filter(user_id=user.id).delete()
-
-    try:
-        # Recalculate CTS and save as new availability
-        generated = calc_ATS(user.id)
-        profile = user.profile
-        new_duration = profile.time_slot_duration
-
-        for start, end in generated:
-            Availability.objects.create(
-                user=user,
-                start_datetime=start,
-                end_datetime=end,
-                update_time=now(),
-                meeting_duration=new_duration,
-                booked=False,
-                user_delete=False
-            )
-        return JsonResponse({'message': f'{created} events saved.'})
-    except Exception as e:
-        return JsonResponse({'error': f'Failed to calculate or save availability: {str(e)}'}, status=500)
+    return JsonResponse({'message': f'{created} events saved.'})
 
 class RegisterView(APIView):
     def post(self, request):
@@ -813,9 +776,6 @@ class UserAppointmentsView(APIView):
     def get(self, request):
         # Get appointments where user is the booker (sent)
         user = request.user
-        profile = user.profile
-        user_timezone = profile.timezone or "UTC"
-
         sent_appointments = Appointment.objects.filter(
             booker_uid=user
         ).select_related('receiver_uid', 'timeslot_id').order_by('-appointment_id')
@@ -832,12 +792,11 @@ class UserAppointmentsView(APIView):
                 'appointment_id': appt.appointment_id,
                 'first_name': appt.receiver_uid.first_name,
                 'last_name': appt.receiver_uid.last_name,
-                'date': appt.timeslot_id.start_datetime.isoformat(),
-                'start_time': appt.timeslot_id.start_datetime.isoformat(),
+                'date': appt.timeslot_id.start_datetime.strftime('%Y.%m.%d'),
+                'start_time': appt.timeslot_id.start_datetime.strftime('%H:%M'),
                 'duration': appt.timeslot_id.meeting_duration,
                 'status': appt.status,
                 'meeting_link': appt.meeting_link,
-                'selectedTimezone':user_timezone,
             })
         
         received_data = []
@@ -846,12 +805,11 @@ class UserAppointmentsView(APIView):
                 'appointment_id': appt.appointment_id,
                 'first_name': appt.booker_uid.first_name,
                 'last_name': appt.booker_uid.last_name,
-                'date': appt.timeslot_id.start_datetime.isoformat(),
-                'start_time': appt.timeslot_id.start_datetime.isoformat(),
+                'date': appt.timeslot_id.start_datetime.strftime('%Y.%m.%d'),
+                'start_time': appt.timeslot_id.start_datetime.strftime('%H:%M'),
                 'duration': appt.timeslot_id.meeting_duration,
                 'status': appt.status,
                 'meeting_link': appt.meeting_link,
-                'selectedTimezone': user_timezone,
             })
         
         return Response({

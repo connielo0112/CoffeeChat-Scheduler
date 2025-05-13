@@ -26,12 +26,10 @@ function App() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        // Check if user is authenticated
         const response = await fetch('/api/users/profile/', {
           credentials: 'include'
         });
-        
-        // if user login is successful, save user data
+
         if (response.ok) {
           const data = await response.json();
           setUser({
@@ -57,25 +55,9 @@ function App() {
     if (!user) return;
   
     // Create WebSocket connection for real-time notifications
-    // const wsUrl = `ws://localhost:8000/ws/chat/global/`;
-    // const wsUrl = `ws://${window.location.host}/ws/chat/global/`;
-    // Make sure the WebSocket URL matches your server setup
-    
-    const roomName = 'global';
-    const wsUrl = `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/ws/chat/${roomName}/`;
-    /* if (window.location.protocol === 'https:') {
-        wsUrl = `wss://${window.location.host}/ws/chat/${roomName}/`;
-    } else {
-        // Since React may be running on port 3000 but Django on 8000
-        // wsUrl = `ws://localhost:8000/ws/chat/${roomName}/`;
-        wsUrl = `ws://${window.location.host}/ws/chat/${roomName}/`;
-    } */
-
-    console.log("Attempting to connect to WebSocket at:", wsUrl);
-
+    const wsUrl = `ws://localhost:8000/ws/chat/global/`;
     const ws = new WebSocket(wsUrl);
   
-    // Handle WebSocket connection open
     ws.onmessage = (event) => {
 
       try {
